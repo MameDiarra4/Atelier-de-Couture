@@ -15,22 +15,25 @@ class TailleurLoginScreen extends StatefulWidget {
 }
 
 class _TailleurLoginScreenState extends State<TailleurLoginScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  String? _loginErrorEmail;
+  String? _loginErrorPassword;
 
   void _seConnecter() {
-    final email = _emailController.text.trim().toLowerCase();
-    final motDePasse = _passwordController.text;
+    setState(() {
+      _loginErrorEmail = null;
+      _loginErrorPassword = null;
+    });
 
-    if (email.isEmpty || motDePasse.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Merci de remplir l'email et le mot de passe."),
-        ),
-      );
+    if (!_formKey.currentState!.validate()) {
       return;
     }
+
+    final email = _emailController.text.trim().toLowerCase();
+    final motDePasse = _passwordController.text;
 
     final tailleur = globalTailleurs.firstWhere(
       (t) => t.email.toLowerCase() == email,
@@ -45,18 +48,18 @@ class _TailleurLoginScreenState extends State<TailleurLoginScreen> {
     );
 
     if (tailleur.id.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Aucun compte tailleur trouvé pour cet email."),
-        ),
-      );
+      setState(() {
+        _loginErrorEmail = "Aucun compte tailleur trouvé pour cet email.";
+      });
+      _formKey.currentState!.validate();
       return;
     }
 
     if (tailleur.motDePasse != motDePasse) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Mot de passe incorrect.")));
+      setState(() {
+        _loginErrorPassword = "Mot de passe incorrect.";
+      });
+      _formKey.currentState!.validate();
       return;
     }
 
@@ -71,6 +74,8 @@ class _TailleurLoginScreenState extends State<TailleurLoginScreen> {
   // FONCTIONNALITÉ : Mot de passe oublié — l'utilisateur saisit son email,
   // on vérifie qu'un compte existe, puis on lui demande un nouveau mot de passe.
   void _showForgotPasswordDialog() {
+    final formKeyStep1 = GlobalKey<FormState>();
+    final formKeyStep2 = GlobalKey<FormState>();
     final emailController = TextEditingController(text: _emailController.text);
     final newPasswordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
@@ -101,13 +106,37 @@ class _TailleurLoginScreenState extends State<TailleurLoginScreen> {
                         style: TextStyle(color: Colors.white70, fontSize: 13),
                       ),
                       const SizedBox(height: 14),
-                      TextField(
-                        controller: emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: kInputDec(
-                          "Votre email",
-                          icon: Icons.mail_outline,
+                      Form(
+                        key: formKeyStep1,
+                        child: TextFormField(
+                          controller: emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: kInputDec(
+                            "Votre email",
+                            icon: Icons.mail_outline,
+                          ),
+                          validator: (v) {
+                            final val = v?.trim() ?? '';
+                            if (val.isEmpty || !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(val)) {
+                              return "Email invalide";
+                            }
+                            final trouve = globalTailleurs.firstWhere(
+                              (t) => t.email.toLowerCase() == val.toLowerCase(),
+                              orElse: () => Tailleur(
+                                id: '',
+                                nom: '',
+                                maisonCouture: '',
+                                email: '',
+                                telephone: '',
+                                motDePasse: '',
+                              ),
+                            );
+                            if (trouve.id.isEmpty) {
+                              return "Aucun compte trouvé pour cet email";
+                            }
+                            return null;
+                          },
                         ),
                       ),
                     ] else ...[
@@ -119,43 +148,64 @@ class _TailleurLoginScreenState extends State<TailleurLoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 14),
-                      TextField(
-                        controller: newPasswordController,
-                        obscureText: obscure1,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: kInputDec(
-                          "Nouveau mot de passe",
-                          icon: Icons.lock_outline,
-                          suffix: IconButton(
-                            icon: Icon(
-                              obscure1
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              color: Colors.grey[400],
+                      Form(
+                        key: formKeyStep2,
+                        child: Column(
+                          children: [
+                            TextFormField(
+                              controller: newPasswordController,
+                              obscureText: obscure1,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: kInputDec(
+                                "Nouveau mot de passe",
+                                icon: Icons.lock_outline,
+                                suffix: IconButton(
+                                  icon: Icon(
+                                    obscure1
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
+                                    color: Colors.grey[400],
+                                  ),
+                                  onPressed: () =>
+                                      setDialogState(() => obscure1 = !obscure1),
+                                ),
+                              ),
+                              validator: (v) {
+                                final val = v?.trim() ?? '';
+                                if (val.isEmpty || val.length < 4) {
+                                  return "Le mot de passe doit contenir au moins 4 caractères";
+                                }
+                                return null;
+                              },
                             ),
-                            onPressed: () =>
-                                setDialogState(() => obscure1 = !obscure1),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: confirmPasswordController,
-                        obscureText: obscure2,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: kInputDec(
-                          "Confirmer le mot de passe",
-                          icon: Icons.lock_outline,
-                          suffix: IconButton(
-                            icon: Icon(
-                              obscure2
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              color: Colors.grey[400],
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: confirmPasswordController,
+                              obscureText: obscure2,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: kInputDec(
+                                "Confirmer le mot de passe",
+                                icon: Icons.lock_outline,
+                                suffix: IconButton(
+                                  icon: Icon(
+                                    obscure2
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
+                                    color: Colors.grey[400],
+                                  ),
+                                  onPressed: () =>
+                                      setDialogState(() => obscure2 = !obscure2),
+                                ),
+                              ),
+                              validator: (v) {
+                                final val = v?.trim() ?? '';
+                                if (val != newPasswordController.text.trim()) {
+                                  return "Les mots de passe ne correspondent pas";
+                                }
+                                return null;
+                              },
                             ),
-                            onPressed: () =>
-                                setDialogState(() => obscure2 = !obscure2),
-                          ),
+                          ],
                         ),
                       ),
                     ],
@@ -174,66 +224,26 @@ class _TailleurLoginScreenState extends State<TailleurLoginScreen> {
                   style: ElevatedButton.styleFrom(backgroundColor: kOrange),
                   onPressed: () {
                     if (!emailVerifie) {
-                      final email = emailController.text.trim().toLowerCase();
-                      if (email.isEmpty) {
-                        ScaffoldMessenger.of(ctx).showSnackBar(
-                          const SnackBar(
-                            content: Text("Merci de saisir votre email."),
-                          ),
-                        );
+                      if (!formKeyStep1.currentState!.validate()) {
                         return;
                       }
+                      final email = emailController.text.trim().toLowerCase();
                       final trouve = globalTailleurs.firstWhere(
                         (t) => t.email.toLowerCase() == email,
-                        orElse: () => Tailleur(
-                          id: '',
-                          nom: '',
-                          maisonCouture: '',
-                          email: '',
-                          telephone: '',
-                          motDePasse: '',
-                        ),
                       );
-                      if (trouve.id.isEmpty) {
-                        ScaffoldMessenger.of(ctx).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              "Aucun compte tailleur trouvé pour cet email.",
-                            ),
-                          ),
-                        );
-                        return;
-                      }
                       setDialogState(() {
                         tailleurTrouve = trouve;
                         emailVerifie = true;
                       });
                     } else {
-                      final nouveau = newPasswordController.text;
-                      final confirme = confirmPasswordController.text;
-                      if (nouveau.isEmpty || nouveau.length < 4) {
-                        ScaffoldMessenger.of(ctx).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              "Le mot de passe doit contenir au moins 4 caractères.",
-                            ),
-                          ),
-                        );
+                      if (!formKeyStep2.currentState!.validate()) {
                         return;
                       }
-                      if (nouveau != confirme) {
-                        ScaffoldMessenger.of(ctx).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              "Les mots de passe ne correspondent pas.",
-                            ),
-                          ),
-                        );
-                        return;
-                      }
+                      final nouveau = newPasswordController.text.trim();
                       setState(() {
                         tailleurTrouve!.motDePasse = nouveau;
                       });
+                      FirestoreService.instance.enregistrerTailleur(tailleurTrouve!);
                       Navigator.pop(ctx);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -328,34 +338,73 @@ class _TailleurLoginScreenState extends State<TailleurLoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      TextField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: kInputDec(
-                          "Entrez votre email",
-                          icon: Icons.mail_outline,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: kInputDec(
-                          "Entrez votre mot de passe",
-                          icon: Icons.lock_outline,
-                          suffix: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              color: Colors.grey[400],
+                      Form(
+                        key: _formKey,
+                        child: Column(
+                          children: [
+                            TextFormField(
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: kInputDec(
+                                "Entrez votre email",
+                                icon: Icons.mail_outline,
+                              ),
+                              onChanged: (_) {
+                                if (_loginErrorEmail != null) {
+                                  setState(() => _loginErrorEmail = null);
+                                }
+                              },
+                              validator: (v) {
+                                final val = v?.trim() ?? '';
+                                if (val.isEmpty ||
+                                    !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                                        .hasMatch(val)) {
+                                  return "Email invalide";
+                                }
+                                if (_loginErrorEmail != null) {
+                                  return _loginErrorEmail;
+                                }
+                                return null;
+                              },
                             ),
-                            onPressed: () => setState(
-                              () => _obscurePassword = !_obscurePassword,
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _passwordController,
+                              obscureText: _obscurePassword,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: kInputDec(
+                                "Entrez votre mot de passe",
+                                icon: Icons.lock_outline,
+                                suffix: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
+                                    color: Colors.grey[400],
+                                  ),
+                                  onPressed: () => setState(
+                                    () => _obscurePassword = !_obscurePassword,
+                                  ),
+                                ),
+                              ),
+                              onChanged: (_) {
+                                if (_loginErrorPassword != null) {
+                                  setState(() => _loginErrorPassword = null);
+                                }
+                              },
+                              validator: (v) {
+                                final val = v?.trim() ?? '';
+                                if (val.isEmpty) {
+                                  return "Mot de passe requis";
+                                }
+                                if (_loginErrorPassword != null) {
+                                  return _loginErrorPassword;
+                                }
+                                return null;
+                              },
                             ),
-                          ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 16),

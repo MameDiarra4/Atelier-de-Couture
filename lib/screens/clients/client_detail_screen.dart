@@ -139,7 +139,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   }
 
   Future<void> _planifierRdv(Commande cmd, {RendezVous? existingRdv}) async {
-    String type = existingRdv?.type ?? 'Essayage';
+    String? type = existingRdv?.type ?? 'Essayage';
     DateTime? date = existingRdv?.dateHeure;
     TimeOfDay? heure = existingRdv != null
         ? TimeOfDay(
@@ -147,6 +147,11 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
             minute: existingRdv.dateHeure.minute,
           )
         : null;
+
+    String? typeError;
+    String? dateError;
+    String? heureError;
+    String? dateTimeError;
 
     await showDialog(
       context: context,
@@ -161,83 +166,169 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                     : "Modifier le rendez-vous",
                 style: const TextStyle(color: Colors.white),
               ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Type", style: TextStyle(color: Colors.white70)),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      ChoiceChip(
-                        label: const Text("Essayage"),
-                        selected: type == 'Essayage',
-                        selectedColor: kOrange,
-                        labelStyle: TextStyle(
-                          color: type == 'Essayage'
-                              ? Colors.white
-                              : Colors.grey[300],
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Type", style: TextStyle(color: Colors.white70)),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        ChoiceChip(
+                          label: const Text("Essayage"),
+                          selected: type == 'Essayage',
+                          selectedColor: kOrange,
+                          labelStyle: TextStyle(
+                            color: type == 'Essayage'
+                                ? Colors.white
+                                : Colors.grey[300],
+                          ),
+                          backgroundColor: const Color(0xFF0D0F17),
+                          onSelected: (_) => setDialogState(() {
+                            type = 'Essayage';
+                            typeError = null;
+                          }),
                         ),
-                        backgroundColor: const Color(0xFF0D0F17),
-                        onSelected: (_) =>
-                            setDialogState(() => type = 'Essayage'),
-                      ),
-                      const SizedBox(width: 10),
-                      ChoiceChip(
-                        label: const Text("Retrait"),
-                        selected: type == 'Retrait',
-                        selectedColor: kOrange,
-                        labelStyle: TextStyle(
-                          color: type == 'Retrait'
-                              ? Colors.white
-                              : Colors.grey[300],
+                        const SizedBox(width: 10),
+                        ChoiceChip(
+                          label: const Text("Livraison"),
+                          selected: type == 'Livraison' || type == 'Retrait',
+                          selectedColor: kOrange,
+                          labelStyle: TextStyle(
+                            color: (type == 'Livraison' || type == 'Retrait')
+                                ? Colors.white
+                                : Colors.grey[300],
+                          ),
+                          backgroundColor: const Color(0xFF0D0F17),
+                          onSelected: (_) => setDialogState(() {
+                            type = 'Livraison';
+                            typeError = null;
+                          }),
                         ),
-                        backgroundColor: const Color(0xFF0D0F17),
-                        onSelected: (_) =>
-                            setDialogState(() => type = 'Retrait'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.calendar_today, color: kOrange),
-                    title: Text(
-                      date == null
-                          ? "Choisir la date"
-                          : "${date!.day}/${date!.month}/${date!.year}",
-                      style: const TextStyle(color: Colors.white),
+                      ],
                     ),
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: ctx,
-                        initialDate: DateTime.now().add(
-                          const Duration(days: 1),
+                    if (typeError != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          typeError!,
+                          style: const TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 12,
+                          ),
                         ),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
-                      );
-                      if (picked != null) setDialogState(() => date = picked);
-                    },
-                  ),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.access_time, color: kOrange),
-                    title: Text(
-                      heure == null
-                          ? "Choisir l'heure"
-                          : heure!.format(context),
-                      style: const TextStyle(color: Colors.white),
+                      ),
+                    const SizedBox(height: 16),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: kInputBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: (dateError != null || dateTimeError != null)
+                            ? Border.all(color: Colors.redAccent, width: 1.5)
+                            : null,
+                      ),
+                      child: ListTile(
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 12),
+                        leading:
+                            const Icon(Icons.calendar_today, color: kOrange),
+                        title: Text(
+                          date == null
+                              ? "Choisir la date *"
+                              : "${date!.day.toString().padLeft(2, '0')}/${date!.month.toString().padLeft(2, '0')}/${date!.year}",
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: ctx,
+                            initialDate: date ??
+                                DateTime.now().add(const Duration(days: 1)),
+                            firstDate: DateTime(2020),
+                            lastDate:
+                                DateTime.now().add(const Duration(days: 365)),
+                          );
+                          if (picked != null) {
+                            setDialogState(() {
+                              date = picked;
+                              dateError = null;
+                              dateTimeError = null;
+                            });
+                          }
+                        },
+                      ),
                     ),
-                    onTap: () async {
-                      final picked = await showTimePicker(
-                        context: ctx,
-                        initialTime: const TimeOfDay(hour: 10, minute: 0),
-                      );
-                      if (picked != null) setDialogState(() => heure = picked);
-                    },
-                  ),
-                ],
+                    if (dateError != null)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 12, top: 4),
+                        child: Text(
+                          dateError!,
+                          style: const TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 12),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: kInputBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: (heureError != null || dateTimeError != null)
+                            ? Border.all(color: Colors.redAccent, width: 1.5)
+                            : null,
+                      ),
+                      child: ListTile(
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 12),
+                        leading: const Icon(Icons.access_time, color: kOrange),
+                        title: Text(
+                          heure == null
+                              ? "Choisir l'heure *"
+                              : heure!.format(context),
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        onTap: () async {
+                          final picked = await showTimePicker(
+                            context: ctx,
+                            initialTime: heure ??
+                                const TimeOfDay(hour: 10, minute: 0),
+                          );
+                          if (picked != null) {
+                            setDialogState(() {
+                              heure = picked;
+                              heureError = null;
+                              dateTimeError = null;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                    if (heureError != null)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 12, top: 4),
+                        child: Text(
+                          heureError!,
+                          style: const TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    if (dateTimeError != null)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 12, top: 6),
+                        child: Text(
+                          dateTimeError!,
+                          style: const TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
@@ -250,31 +341,55 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: kOrange),
                   onPressed: () async {
-                    if (date == null || heure == null) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            "Merci de choisir une date et une heure.",
-                          ),
-                        ),
+                    setDialogState(() {
+                      typeError = null;
+                      dateError = null;
+                      heureError = null;
+                      dateTimeError = null;
+                    });
+
+                    bool aErreur = false;
+                    if (type == null) {
+                      typeError = "Veuillez choisir un type de rendez-vous";
+                      aErreur = true;
+                    }
+                    if (date == null) {
+                      dateError = "La date est requise";
+                      aErreur = true;
+                    }
+                    if (heure == null) {
+                      heureError = "L'heure est requise";
+                      aErreur = true;
+                    }
+
+                    DateTime? dateHeure;
+                    if (date != null && heure != null) {
+                      dateHeure = DateTime(
+                        date!.year,
+                        date!.month,
+                        date!.day,
+                        heure!.hour,
+                        heure!.minute,
                       );
+                      if (dateHeure.isBefore(DateTime.now())) {
+                        dateTimeError = "Le rendez-vous ne peut pas être dans le passé";
+                        aErreur = true;
+                      }
+                    }
+
+                    if (aErreur) {
+                      setDialogState(() {});
                       return;
                     }
-                    final dateHeure = DateTime(
-                      date!.year,
-                      date!.month,
-                      date!.day,
-                      heure!.hour,
-                      heure!.minute,
-                    );
+
                     final rdvFinal = RendezVous(
                       id:
                           existingRdv?.id ??
                           DateTime.now().millisecondsSinceEpoch.toString(),
                       commandeId: cmd.id,
                       clientId: widget.client.id,
-                      type: type,
-                      dateHeure: dateHeure,
+                      type: type!,
+                      dateHeure: dateHeure!,
                       note: existingRdv?.note,
                     );
                     setState(() {

@@ -157,8 +157,8 @@ class _AddCommandeScreenState extends State<AddCommandeScreen> {
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 7)),
-      firstDate: DateTime.now(),
+      initialDate: _selectedDate ?? DateTime.now().add(const Duration(days: 7)),
+      firstDate: DateTime(2020),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (picked != null) setState(() => _selectedDate = picked);
@@ -174,6 +174,23 @@ class _AddCommandeScreenState extends State<AddCommandeScreen> {
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
       ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: kOrange, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+      ),
+      errorStyle: const TextStyle(color: Colors.redAccent, fontSize: 12),
       icon: icon,
     );
   }
@@ -204,7 +221,11 @@ class _AddCommandeScreenState extends State<AddCommandeScreen> {
                   "Modèle",
                   icon: const Icon(Icons.checkroom, color: kOrange),
                 ),
-                validator: (v) => v!.isEmpty ? "Modèle requis" : null,
+                validator: (v) {
+                  final val = v?.trim() ?? '';
+                  if (val.isEmpty) return "Le modèle est requis";
+                  return null;
+                },
               ),
               const SizedBox(height: 15),
               TextFormField(
@@ -214,30 +235,88 @@ class _AddCommandeScreenState extends State<AddCommandeScreen> {
                   "Tissu",
                   icon: const Icon(Icons.color_lens, color: kOrange),
                 ),
-                validator: (v) => v!.isEmpty ? "Tissu requis" : null,
+                validator: (v) {
+                  final val = v?.trim() ?? '';
+                  if (val.isEmpty) return "Le tissu est requis";
+                  return null;
+                },
               ),
               const SizedBox(height: 15),
-              ListTile(
-                tileColor: kInputBg,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                leading: const Icon(Icons.calendar_today, color: kOrange),
-                title: Text(
-                  _selectedDate == null
-                      ? "Choisir la date de livraison"
-                      : "Livraison le : ${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}",
-                  style: const TextStyle(color: Colors.white),
-                ),
-                trailing: const Icon(
-                  Icons.arrow_forward_ios,
-                  color: Colors.white70,
-                ),
-                onTap: () => _selectDate(context),
+              FormField<DateTime>(
+                initialValue: _selectedDate,
+                validator: (_) {
+                  if (_selectedDate == null) {
+                    return "La date doit être dans le futur";
+                  }
+                  final now = DateTime.now();
+                  final today = DateTime(now.year, now.month, now.day);
+                  final selected = DateTime(
+                    _selectedDate!.year,
+                    _selectedDate!.month,
+                    _selectedDate!.day,
+                  );
+                  if (selected.isBefore(today)) {
+                    return "La date doit être dans le futur";
+                  }
+                  return null;
+                },
+                builder: (fieldState) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Material(
+                        color: kInputBg,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: fieldState.hasError
+                                ? Border.all(color: Colors.redAccent, width: 1.5)
+                                : null,
+                          ),
+                          child: ListTile(
+                            tileColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          leading: const Icon(Icons.calendar_today, color: kOrange),
+                          title: Text(
+                            _selectedDate == null
+                                ? "Choisir la date de livraison"
+                                : "Livraison le : ${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}",
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          trailing: const Icon(
+                            Icons.arrow_forward_ios,
+                            color: Colors.white70,
+                            size: 16,
+                          ),
+                          onTap: () async {
+                            await _selectDate(context);
+                            fieldState.didChange(_selectedDate);
+                          },
+                        ),
+                      ),
+                    ),
+                      if (fieldState.hasError)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 12, top: 6),
+                          child: Text(
+                            fieldState.errorText!,
+                            style: const TextStyle(
+                              color: Colors.redAccent,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
               const Divider(color: Colors.white24),
               const SizedBox(height: 10),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: TextFormField(
@@ -245,8 +324,21 @@ class _AddCommandeScreenState extends State<AddCommandeScreen> {
                       keyboardType: TextInputType.number,
                       style: const TextStyle(color: Colors.white),
                       decoration: _dec("Montant Total"),
-                      onChanged: (_) => _calculerReste(),
-                      validator: (v) => v!.isEmpty ? "Requis" : null,
+                      onChanged: (_) {
+                        _calculerReste();
+                        if (_acompteController.text.isNotEmpty) {
+                          _formKey.currentState?.validate();
+                        }
+                      },
+                      validator: (v) {
+                        final val = v?.trim() ?? '';
+                        if (val.isEmpty) return "Montant invalide";
+                        final n = double.tryParse(val);
+                        if (n == null || n <= 0) {
+                          return "Montant invalide";
+                        }
+                        return null;
+                      },
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -257,6 +349,19 @@ class _AddCommandeScreenState extends State<AddCommandeScreen> {
                       style: const TextStyle(color: Colors.white),
                       decoration: _dec("Acompte"),
                       onChanged: (_) => _calculerReste(),
+                      validator: (v) {
+                        final val = v?.trim() ?? '';
+                        if (val.isEmpty) return null;
+                        final acompte = double.tryParse(val);
+                        if (acompte == null || acompte < 0) {
+                          return "Montant invalide";
+                        }
+                        final total = double.tryParse(_montantTotalController.text.trim()) ?? 0.0;
+                        if (acompte > total) {
+                          return "L'acompte ne peut pas dépasser le montant total";
+                        }
+                        return null;
+                      },
                     ),
                   ),
                 ],
@@ -366,35 +471,27 @@ class _AddCommandeScreenState extends State<AddCommandeScreen> {
                   ),
                 ),
                 onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    if (_selectedDate == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            "Veuillez choisir une date de livraison",
-                          ),
-                        ),
-                      );
-                      return;
-                    }
-
-                    final commande = Commande(
-                      id:
-                          widget.existingCommande?.id ??
-                          DateTime.now().millisecondsSinceEpoch.toString(),
-                      clientId: widget.clientId,
-                      modele: _modeleController.text,
-                      tissu: _tissuController.text,
-                      dateLivraison: _selectedDate!,
-                      statut: widget.existingCommande?.statut ?? "Mesure",
-                      montantTotal:
-                          double.tryParse(_montantTotalController.text) ?? 0.0,
-                      acompte: double.tryParse(_acompteController.text) ?? 0.0,
-                      photoModele: _photoModele,
-                    );
-
-                    Navigator.pop(context, commande);
+                  if (!_formKey.currentState!.validate()) {
+                    return;
                   }
+
+                  final commande = Commande(
+                    id:
+                        widget.existingCommande?.id ??
+                        DateTime.now().millisecondsSinceEpoch.toString(),
+                    clientId: widget.clientId,
+                    modele: _modeleController.text.trim(),
+                    tissu: _tissuController.text.trim(),
+                    dateLivraison: _selectedDate!,
+                    statut: widget.existingCommande?.statut ?? "Mesure",
+                    montantTotal:
+                        double.parse(_montantTotalController.text.trim()),
+                    acompte:
+                        double.tryParse(_acompteController.text.trim()) ?? 0.0,
+                    photoModele: _photoModele,
+                  );
+
+                  Navigator.pop(context, commande);
                 },
                 child: Text(
                   _estModification

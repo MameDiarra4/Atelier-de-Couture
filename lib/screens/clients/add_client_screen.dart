@@ -32,6 +32,8 @@ class _AddClientScreenState extends State<AddClientScreen> {
   String _modeleFemme = 'Robe';
   final Map<String, TextEditingController> _mesureControllers = {};
 
+  bool _genreErreur = false;
+
   bool get _estModification => widget.existingClient != null;
 
   @override
@@ -79,6 +81,7 @@ class _AddClientScreenState extends State<AddClientScreen> {
   void _choisirGenre(String genre) {
     setState(() {
       _genre = genre;
+      _genreErreur = false;
       _rebuildControleurs();
     });
   }
@@ -124,6 +127,23 @@ class _AddClientScreenState extends State<AddClientScreen> {
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
       ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: kOrange, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+      ),
+      errorStyle: const TextStyle(color: Colors.redAccent, fontSize: 12),
     );
   }
 
@@ -163,7 +183,11 @@ class _AddClientScreenState extends State<AddClientScreen> {
                 controller: _nomController,
                 style: const TextStyle(color: Colors.white),
                 decoration: _dec("Nom Complet"),
-                validator: (v) => v!.isEmpty ? "Nom requis" : null,
+                validator: (v) {
+                  final val = v?.trim() ?? '';
+                  if (val.isEmpty) return "Le nom du client est requis";
+                  return null;
+                },
               ),
               const SizedBox(height: 10),
               TextFormField(
@@ -171,13 +195,37 @@ class _AddClientScreenState extends State<AddClientScreen> {
                 keyboardType: TextInputType.phone,
                 style: const TextStyle(color: Colors.white),
                 decoration: _dec("Téléphone"),
-                validator: (v) => v!.isEmpty ? "Téléphone requis" : null,
+                validator: (v) {
+                  final raw = v?.trim() ?? '';
+                  if (raw.isEmpty) return "Numéro de téléphone invalide";
+                  final clean = raw.replaceAll(RegExp(r'[\s\-]'), '');
+                  if (!RegExp(r'^[0-9]+$').hasMatch(clean) || clean.length != 9) {
+                    return "Numéro de téléphone invalide";
+                  }
+                  // Unicité du téléphone chez CE tailleur uniquement
+                  // (un même numéro peut exister chez un autre tailleur)
+                  final doublon = globalClients.any((c) {
+                    if (c.tailleurId != widget.tailleurId) return false; // autre tailleur → ignoré
+                    if (c.id == widget.existingClient?.id) return false;  // propre fiche en édition → ignoré
+                    final cPhone = c.telephone.trim().replaceAll(RegExp(r'[\s\-]'), '');
+                    return cPhone == clean;
+                  });
+                  if (doublon) {
+                    return "Ce numéro est déjà utilisé par un client de cet atelier";
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 10),
               TextFormField(
                 controller: _adresseController,
                 style: const TextStyle(color: Colors.white),
                 decoration: _dec("Adresse"),
+                validator: (v) {
+                  final val = v?.trim() ?? '';
+                  if (val.isEmpty) return "L'adresse est requise";
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
               const Text(
@@ -189,41 +237,60 @@ class _AddClientScreenState extends State<AddClientScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: ChoiceChip(
-                      label: const Text("Homme"),
-                      avatar: const Icon(Icons.male, size: 18),
-                      selected: _genre == 'Homme',
-                      selectedColor: kOrange,
-                      labelStyle: TextStyle(
-                        color: _genre == 'Homme'
-                            ? Colors.white
-                            : Colors.grey[300],
+              Container(
+                decoration: _genreErreur && _genre == null
+                    ? BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.redAccent, width: 1.5),
+                      )
+                    : null,
+                padding: _genreErreur && _genre == null
+                    ? const EdgeInsets.all(4)
+                    : EdgeInsets.zero,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text("Homme"),
+                        avatar: const Icon(Icons.male, size: 18),
+                        selected: _genre == 'Homme',
+                        selectedColor: kOrange,
+                        labelStyle: TextStyle(
+                          color: _genre == 'Homme'
+                              ? Colors.white
+                              : Colors.grey[300],
+                        ),
+                        backgroundColor: kInputBg,
+                        onSelected: (_) => _choisirGenre('Homme'),
                       ),
-                      backgroundColor: kInputBg,
-                      onSelected: (_) => _choisirGenre('Homme'),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ChoiceChip(
-                      label: const Text("Femme"),
-                      avatar: const Icon(Icons.female, size: 18),
-                      selected: _genre == 'Femme',
-                      selectedColor: kOrange,
-                      labelStyle: TextStyle(
-                        color: _genre == 'Femme'
-                            ? Colors.white
-                            : Colors.grey[300],
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text("Femme"),
+                        avatar: const Icon(Icons.female, size: 18),
+                        selected: _genre == 'Femme',
+                        selectedColor: kOrange,
+                        labelStyle: TextStyle(
+                          color: _genre == 'Femme'
+                              ? Colors.white
+                              : Colors.grey[300],
+                        ),
+                        backgroundColor: kInputBg,
+                        onSelected: (_) => _choisirGenre('Femme'),
                       ),
-                      backgroundColor: kInputBg,
-                      onSelected: (_) => _choisirGenre('Femme'),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              if (_genreErreur && _genre == null)
+                const Padding(
+                  padding: EdgeInsets.only(left: 4, top: 6),
+                  child: Text(
+                    "Veuillez choisir un genre",
+                    style: TextStyle(color: Colors.redAccent, fontSize: 12),
+                  ),
+                ),
               if (_genre == 'Femme') ...[
                 const SizedBox(height: 16),
                 const Text(
@@ -293,35 +360,38 @@ class _AddClientScreenState extends State<AddClientScreen> {
                   ),
                 ),
                 onPressed: () {
+                  final formValide = _formKey.currentState!.validate();
                   if (_genre == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Merci de choisir le genre du client."),
-                      ),
-                    );
+                    setState(() => _genreErreur = true);
+                  }
+                  if (!formValide || _genre == null) {
                     return;
                   }
-                  if (_formKey.currentState!.validate()) {
-                    final mesures = <String, double>{};
-                    _mesureControllers.forEach((label, controller) {
-                      mesures[_cleMesure(label)] =
-                          double.tryParse(controller.text) ?? 0;
-                    });
 
-                    final client = Client(
-                      id:
-                          widget.existingClient?.id ??
-                          DateTime.now().millisecondsSinceEpoch.toString(),
-                      tailleurId: widget.tailleurId,
-                      nom: _nomController.text,
-                      telephone: _telController.text,
-                      adresse: _adresseController.text,
-                      genre: _genre!,
-                      mesures: mesures,
-                      motDePasse: widget.existingClient?.motDePasse,
-                    );
-                    Navigator.pop(context, client);
-                  }
+                  final mesures = <String, double>{};
+                  _mesureControllers.forEach((label, controller) {
+                    final text = controller.text.trim();
+                    if (text.isNotEmpty) {
+                      final val = double.tryParse(text);
+                      if (val != null && val > 0) {
+                        mesures[_cleMesure(label)] = val;
+                      }
+                    }
+                  });
+
+                  final client = Client(
+                    id:
+                        widget.existingClient?.id ??
+                        DateTime.now().millisecondsSinceEpoch.toString(),
+                    tailleurId: widget.tailleurId,
+                    nom: _nomController.text.trim(),
+                    telephone: _telController.text.trim().replaceAll(RegExp(r'\s+'), ''),
+                    adresse: _adresseController.text.trim(),
+                    genre: _genre!,
+                    mesures: mesures,
+                    motDePasse: widget.existingClient?.motDePasse,
+                  );
+                  Navigator.pop(context, client);
                 },
                 child: Text(
                   _estModification
@@ -337,6 +407,16 @@ class _AddClientScreenState extends State<AddClientScreen> {
     );
   }
 
+  String? _validerMesure(String? v) {
+    final val = v?.trim() ?? '';
+    if (val.isEmpty) return null;
+    final n = double.tryParse(val);
+    if (n == null || n <= 0) {
+      return "Mesure invalide";
+    }
+    return null;
+  }
+
   // Affiche les champs de mesures deux par deux, adaptés au genre choisi
   List<Widget> _buildChampsMesures() {
     final widgets = <Widget>[];
@@ -349,6 +429,7 @@ class _AddClientScreenState extends State<AddClientScreen> {
         Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: TextFormField(
@@ -356,6 +437,7 @@ class _AddClientScreenState extends State<AddClientScreen> {
                   keyboardType: TextInputType.number,
                   style: const TextStyle(color: Colors.white),
                   decoration: _dec(label1),
+                  validator: _validerMesure,
                 ),
               ),
               if (label2 != null) ...[
@@ -366,6 +448,7 @@ class _AddClientScreenState extends State<AddClientScreen> {
                     keyboardType: TextInputType.number,
                     style: const TextStyle(color: Colors.white),
                     decoration: _dec(label2),
+                    validator: _validerMesure,
                   ),
                 ),
               ] else
