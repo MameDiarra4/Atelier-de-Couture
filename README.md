@@ -33,62 +33,42 @@
 
 ## 🌟 Présentation du Projet
 
-Dans les ateliers de couture traditionnels, la prise de mesures sur carnet papier, le suivi des commandes éparpillé et les relances manuelles par téléphone entraînent souvent des retards, des oublis de retouches ou des tensions financières autour des acomptes.
+## 🌟 Présentation du Projet
 
-**DigitSagnse** répond à ces défis grâce à une plateforme moderne et intuitive :
-- **Centralisation des mesures corporelles** avec différenciation morphologique précise Homme/Femme.
-- **Suivi transparent de la confection** en 5 étapes clés.
-- **Gestion des rendez-vous** avec détection automatique des rappels à J-1.
-- **Transparence financière** avec calcul en temps réel des acomptes et soldes restants.
-- **Double interface dédiée** : un tableau de bord complet pour le tailleur et un portail léger sans mot de passe pour le client.
+Dans les ateliers de couture traditionnels, la gestion sur carnet papier (mesures, commandes, acomptes) entraîne souvent des retards, des oublis et des erreurs de suivi.
+
+**DigitSangse** modernise et simplifie le quotidien des tailleurs et de leurs clients grâce à :
+
+* **Gestion des mesures** : Enregistrement précis des mesures morphologiques (Homme/Femme).
+* **Suivi de confection** : Progression transparente de la commande en 5 étapes.
+* **Rappels automatiques** : Détection et notifications des rendez-vous à J-1.
+* **Gestion financière** : Calcul automatique des acomptes et des soldes.
+* **Accès adapté** : 
+  * **Côté Tailleur** : Tableau de bord complet de gestion.
+  * **Côté Client** : Portail dédié pour suivre ses commandes sans mot de passe.
 
 ---
 
 ## ✨ Fonctionnalités Principales
 
 ### 🧵 Espace Tailleur
+Un véritable outil de gestion  pour piloter l'atelier de bout en bout :
 
-L'espace tailleur est un véritable ERP mobile pour gérer l'atelier de bout en bout :
-
-- **Tableau de Bord & KPIs en temps réel :**
-  - Compteur global de clients et de commandes actives.
-  - Indicateur de la trésorerie restante à percevoir (FCFA).
-  - Encadré d'alerte pour les **rendez-vous du lendemain** (essayages et retraits imminents).
-- **Fiche Client & Prise de Mesures (Fonctionnalité 1) :**
-  - Enregistrement complet : nom, contact téléphonique, adresse, genre (*Homme* / *Femme*).
-  - Formulaire de mensurations dynamiques adaptées au genre :
-    - *Homme* : Poitrine, Épaule, Tour de fesse, Col, Longueur boubou, Longueur pantalon, Manche, Ceinture.
-    - *Femme* : Poitrine, Épaule, Taille, Tour de fesse, Blouse, + Longueur robe ou (Longueur jupe + Longueur boubou).
-  - Modification, mise à jour des mesures à tout moment et suppression sécurisée en cascade.
-- **Gestion des Commandes (Fonctionnalités 2 & 5) :**
-  - Rattachement direct à la fiche client.
-  - Prise de vue ou sélection de la **photo du modèle** (caméra / galerie).
-  - Renseignement du modèle, type de tissu, date estimée de livraison.
-  - Définition du montant total et de l'acompte initial.
-  - Filtrage des commandes par statut (`Tous`, `Mesure`, `Coupe`, `Essayage`, `Finition`, `Livré`).
-  - Passage d'un statut à un autre d'un simple clic.
-- **Planification des Rendez-vous (Fonctionnalité 3) :**
-  - Fixation des rendez-vous d'**Essayage** ou de **Retrait** directement depuis la commande.
-  - Système d'alerte préventif pour les rendez-vous de demain.
-- **Gestion des Encaissements & Soldes (Fonctionnalité 4) :**
-  - Enregistrement de versements successifs (Espèces, Wave, Orange Money, etc.).
-  - Calcul automatique et transparent du `reste à payer`.
-  - Transaction atomique sécurisée dans Firebase Firestore.
-- **Mon Atelier :**
-  - Personnalisation du profil de l'atelier (Nom de la maison de couture, téléphone, email).
-  - État de synchronisation avec le Cloud.
+* **Tableau de Bord & Synthèse** : Vues d'ensemble sur le nombre de clients, commandes actives, trésorerie à recouvrir (FCFA) et alertes pour les rendez-vous du lendemain.
+* **Fiches Clients & Mesures Adaptatives** :
+  * **Homme** : Poitrine, Épaule, Fesses, Col, Boubou, Pantalon, Manche, Ceinture.
+  * **Femme** : Poitrine, Épaule, Taille, Fesses, Blouse, Robe ou Jupe + Boubou.
+* **Gestion des Commandes & Photos** : Rattachement au client, photo du modèle, type de tissu, suivi par statut (*Mesure* ➔ *Coupe* ➔ *Essayage* ➔ *Finition* ➔ *Livré*).
+* **Planification & Rappels** : Programmateur d'essayages/retraits avec rappels automatiques à J-1.
+* **Suivi Financier & Encaissements** : Gestion des paiements échelonnés (Espèces, Wave, Orange Money) et calcul automatique du solde restant.
+* **Profil Atelier** : Personnalisation de la maison de couture et synchronisation en temps réel sur Cloud.
 
 ### 📱 Espace Client (Portail Autonome)
+Une interface fluide pensée pour l'expérience du client :
 
-- **Connexion rapide et sans friction (Fonctionnalité 6) :**
-  - Accès direct via le numéro de téléphone enregistré par le tailleur (aucun mot de passe contraignant).
-- **Suivi visuel de confection :**
-  - Pipeline visuel indiquant l'avancement exact de la tenue (`Mesure` ➔ `Coupe` ➔ `Essayage` ➔ `Finition` ➔ `Livré`).
-  - Affichage de la photo de référence de la création.
-- **Rappels & Transparence financière :**
-  - Date du prochain rendez-vous d'essayage ou de livraison.
-  - Montant versé et solde restant à régler à la livraison.
-
+* **Accès Simplifié** : Connexion rapide via le numéro de téléphone (sans mot de passe).
+* **Suivi en Temps Réel** : Progression visuelle de la confection et aperçu de la photo du modèle.
+* **Transparence & Rappels** : Consultation des dates de rendez-vous et état exact des paiements (acompte versé / reste à régler).
 ---
 
 ## 🔄 Cycle de Vie d'une Commande
@@ -110,7 +90,7 @@ flowchart LR
 
 ## 🛠️ Architecture Modulaire & Stack Technologique
 
-Le projet a été restructuré selon les principes de la **programmation modulaire** et de la séparation des préoccupations (*Separation of Concerns*). Le code est découpé en modules autonomes et hautement réutilisables :
+Le projet a été restructuré selon les principes de la **programmation modulaire** et de la séparation des préoccupations. Le code est découpé en modules autonomes et hautement réutilisables :
 
 | Couche / Module | Rôle & Responsabilité | Emplacement |
 | :--- | :--- | :--- |
@@ -275,13 +255,12 @@ L'application intègre des données pré-enregistrées pour tester immédiatemen
 
 ---
 
-## 👩‍💻 Auteur & Contributeurs
+## 👩‍💻 Auteurs
 
 Projet développé avec passion par :
 
-- **Mame Diarra NGOM** — [@MameDiarra4](https://github.com/MameDiarra4)  
-  *Ingénierie & Développement Mobile Flutter*  
-  Contact : [mamediarrangom2004@gmail.com](mailto:mamediarrangom2004@gmail.com)
+- **Mame Diarra NGOM P342384** Et **Astou Diop P342328**  —   
+
 
 ---
 
