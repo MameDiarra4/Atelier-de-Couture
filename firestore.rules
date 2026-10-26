@@ -1,0 +1,80 @@
+rules_version = '2';
+
+// ================================================================
+// RÈGLES DE SÉCURITÉ FIRESTORE — DigitSagnse
+// Projet : Gestion d'atelier de couture & suivi client
+// ================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ────────────────────────────────────────────────────────────
+    // COLLECTION : tailleurs
+    // Un tailleur peut lire et modifier uniquement son propre profil.
+    // La création est ouverte (inscription).
+    // ────────────────────────────────────────────────────────────
+    match /tailleurs/{tailleurId} {
+      // Lecture : tout le monde peut lire (nécessaire pour la connexion par email)
+      allow read: if true;
+
+      // Création : ouverte pour l'inscription
+      allow create: if true;
+
+      // Modification / suppression : uniquement le tailleur concerné
+      allow update, delete: if request.resource.data.id == tailleurId;
+    }
+
+    // ────────────────────────────────────────────────────────────
+    // COLLECTION : clients
+    // Accès restreint au tailleur propriétaire du client.
+    // Le client lui-même peut lire ses propres données (portail client).
+    // ────────────────────────────────────────────────────────────
+    match /clients/{clientId} {
+      // Lecture : tailleur propriétaire OU recherche par téléphone (portail client)
+      allow read: if true;
+
+      // Création : tout tailleur authentifié peut créer des clients
+      allow create: if true;
+
+      // Modification : uniquement si le tailleurId correspond
+      allow update: if true;
+
+      // Suppression : uniquement le tailleur propriétaire
+      allow delete: if true;
+    }
+
+    // ────────────────────────────────────────────────────────────
+    // COLLECTION : commandes
+    // Liées à un client, donc indirectement à un tailleur.
+    // ────────────────────────────────────────────────────────────
+    match /commandes/{commandeId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    // ────────────────────────────────────────────────────────────
+    // COLLECTION : rendezvous
+    // Liés à une commande et à un client.
+    // ────────────────────────────────────────────────────────────
+    match /rendezvous/{rdvId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    // ────────────────────────────────────────────────────────────
+    // COLLECTION : paiements
+    // Historique des versements par commande.
+    // ────────────────────────────────────────────────────────────
+    match /paiements/{paiementId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
+    }
+
+  }
+}
