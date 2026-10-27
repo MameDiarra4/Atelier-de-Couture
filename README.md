@@ -207,8 +207,8 @@ Le projet repose sur 5 entités interconnectées définies dans `lib/models/mode
 
 1. **Cloner le dépôt :**
    ```bash
-   git clone https://github.com/MameDiarra4/couture.git
-   cd couture
+   git clone https://github.com/MameDiarra4/Atelier-de-Couture.git
+   cd Atelier-de-Couture
    ```
 
 2. **Installer les dépendances :**
